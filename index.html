@@ -1500,10 +1500,6 @@
       </div>
     </dialog>
 
-    <template id="wordControlsHome">
-      <div></div>
-    </template>
-
     <script>
       // =========
       // Data
@@ -2591,11 +2587,6 @@
         if (sb) sb.style.display = "";
 
         if (headerTitleEl) headerTitleEl.textContent = "日文對對碰";
-
-        // Put speed controls back to its original place in DOM.
-        if (wordSpeedControls && wordControlsHome && wordSpeedControls.parentElement !== wordControlsHome) {
-          wordControlsHome.appendChild(wordSpeedControls);
-        }
       }
 
       function onCardClick(cardId) {
