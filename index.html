@@ -1,0 +1,3093 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>日文對對碰：片假名翻牌配對記憶遊戲</title>
+    <style>
+      :root {
+        --bg0: #F6FBFF;
+        --bg1: #EAF3FF;
+        --card: rgba(255, 255, 255, 0.06);
+        --card-border: rgba(16, 35, 65, 0.14);
+        --text: rgba(16, 35, 65, 0.92);
+        --muted: rgba(16, 35, 65, 0.62);
+        --accentBlue: #2d8cff;
+        --accentOrange: #ff8a3d;
+        --accent: var(--accentBlue);
+        --danger: #ff6b9f;
+        --shadow: rgba(16, 35, 65, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans JP",
+          "Microsoft JhengHei", sans-serif;
+        color: var(--text);
+        background: var(--bg1);
+        background-color: var(--bg1);
+        overflow-x: hidden;
+      }
+
+      .wrap {
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        padding: 18px 22px 0;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .menu-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(16, 35, 65, 0.12);
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--muted);
+        user-select: none;
+        cursor: pointer;
+      }
+
+      .menu-btn .pill {
+        font-size: 12px;
+        letter-spacing: 0.12em;
+      }
+
+      .header-title {
+        text-align: center;
+        font-size: 52px;
+        font-weight: 950;
+        letter-spacing: 0.06em;
+        background: linear-gradient(90deg, var(--accentBlue), var(--accentOrange));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+        margin-top: 4px;
+        white-space: nowrap;
+      }
+
+      .scorebar {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 10px 18px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(16, 35, 65, 0.10);
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .metric {
+        min-width: 88px;
+        text-align: center;
+      }
+
+      .metric .label {
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        color: var(--muted);
+      }
+
+      .metric .value {
+        font-size: 18px;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      .progress-track {
+        width: 130px;
+        height: 8px;
+        border-radius: 99px;
+        background: rgba(16, 35, 65, 0.10);
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        width: 10%;
+        background: linear-gradient(90deg, rgba(168, 220, 255, 0.95), rgba(255, 209, 166, 0.88));
+        border-radius: 99px;
+        transition: width 250ms ease;
+      }
+
+      .lives-value.low {
+        color: var(--danger);
+        text-shadow: 0 14px 30px rgba(255, 107, 159, 0.18);
+      }
+
+      main {
+        flex: 1;
+        display: grid;
+        place-items: center;
+        padding: 22px;
+      }
+
+      .game-card {
+        width: min(980px, 100%);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 18px;
+      }
+
+      .deck {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(72px, 1fr));
+        gap: 14px;
+        padding: 14px 0 6px;
+        justify-items: center;
+      }
+
+      @media (max-width: 720px) {
+        .deck {
+          grid-template-columns: repeat(4, minmax(72px, 1fr));
+        }
+      }
+
+      @media (max-width: 520px) {
+        header {
+          padding-left: 12px;
+          padding-right: 12px;
+        }
+        .header-title {
+          font-size: 32px;
+          letter-spacing: 0.04em;
+        }
+        .scorebar {
+          gap: 12px;
+          padding: 8px 10px;
+        }
+        .metric {
+          min-width: 70px;
+        }
+        .progress-track {
+          width: 96px;
+        }
+        .deck {
+          grid-template-columns: repeat(3, minmax(72px, 1fr));
+          gap: 12px;
+        }
+      }
+
+      .deck.word-mode {
+        grid-template-columns: 1fr;
+        justify-items: center;
+      }
+
+      @media (max-width: 520px) {
+        .deck.word-mode {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .word-nav {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        margin: 6px 0 0;
+        user-select: none;
+      }
+
+      .word-nav.show {
+        display: flex;
+      }
+
+      .word-nav-btn {
+        border-radius: 14px;
+        width: 56px;
+        height: 44px;
+        border: 1px solid rgba(16, 35, 65, 0.18);
+        background: rgba(255, 255, 255, 0.86);
+        color: var(--text);
+        cursor: pointer;
+        font-weight: 1000;
+        box-shadow: 0 10px 30px rgba(16, 35, 65, 0.10);
+      }
+
+      .word-nav-btn:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+
+      .word-nav-label {
+        min-width: 86px;
+        text-align: center;
+        font-weight: 1000;
+        color: var(--text);
+      }
+
+      .word-speak-btn {
+        width: 66px;
+        height: 66px;
+        border-radius: 18px;
+        border: 1px solid rgba(16, 35, 65, 0.14);
+        background: rgba(255, 255, 255, 0.86);
+        color: var(--text);
+        cursor: pointer;
+        box-shadow: 0 12px 30px rgba(16, 35, 65, 0.10);
+        font-weight: 1000;
+      }
+
+      .word-speak-btn:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+
+      /* Word UI (layout only, keep light theme) */
+      .word-ui {
+        display: none;
+        width: min(1120px, 100%);
+        margin: 0 auto;
+        padding: 10px 8px 0;
+        color: var(--text);
+      }
+
+      .word-ui.show {
+        display: grid;
+        gap: 14px;
+      }
+
+      .word-top {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 0 4px;
+        width: calc(100% - 338px);
+        max-width: 860px;
+        margin-right: auto;
+        margin-left: 0;
+      }
+
+      .word-panel {
+        width: fit-content;
+        border-radius: 16px;
+        border: 1px solid rgba(16, 35, 65, 0.12);
+        background: rgba(255, 255, 255, 0.78);
+        padding: 12px 12px 10px;
+      }
+
+      .word-panel-title {
+        font-weight: 1000;
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 0 10px;
+        letter-spacing: 0.02em;
+      }
+
+      .word-tabs {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .word-tabs-label {
+        padding: 9px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(16, 35, 65, 0.18);
+        background: rgba(255, 255, 255, 0.96);
+        color: var(--muted);
+        font-weight: 1000;
+        font-size: 13px;
+      }
+
+      .word-tab {
+        border-radius: 14px;
+        padding: 10px 14px;
+        border: 1px solid rgba(16, 35, 65, 0.16);
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--text);
+        cursor: pointer;
+        font-weight: 950;
+      }
+
+      .word-tab.active {
+        border-color: rgba(45, 140, 255, 0.55);
+        background: rgba(168, 220, 255, 0.65);
+        color: var(--text);
+      }
+
+      .word-mode-btns {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+
+      .word-mode-btn {
+        border-radius: 14px;
+        padding: 10px 14px;
+        border: 1px solid rgba(16, 35, 65, 0.16);
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--text);
+        cursor: pointer;
+        font-weight: 950;
+        white-space: nowrap;
+      }
+
+      .word-mode-btn.active {
+        border-color: rgba(255, 138, 61, 0.90);
+        background: rgba(255, 205, 160, 0.98);
+        color: rgba(140, 70, 20, 0.96);
+      }
+
+      .word-progress {
+        display: grid;
+        gap: 8px;
+        justify-items: center;
+      }
+
+      .word-dots {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 0 10px;
+        opacity: 0.9;
+      }
+
+      .word-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(16, 35, 65, 0.16);
+        border: 1px solid rgba(16, 35, 65, 0.10);
+      }
+
+      .word-dot.active {
+        background: rgba(45, 140, 255, 0.95);
+        border-color: rgba(45, 140, 255, 0.75);
+        box-shadow: 0 10px 24px rgba(45, 140, 255, 0.25);
+      }
+
+      .word-counter {
+        font-weight: 950;
+        color: var(--muted);
+      }
+
+      .word-stage {
+        display: grid;
+        grid-template-columns: minmax(520px, 1fr) 300px;
+        gap: 38px;
+        align-items: start;
+        padding: 4px 4px 0;
+      }
+
+      .word-card-host {
+        display: grid;
+        justify-items: center;
+      }
+
+      .word-card-column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        width: 100%;
+      }
+
+      .word-right-rail {
+        display: grid;
+        gap: 12px;
+        align-content: start;
+        justify-items: stretch;
+      }
+
+      .word-right-rail .word-speed-controls,
+      .word-right-rail .word-learning-controls {
+        display: none;
+        border-radius: 16px;
+        border: 1px solid rgba(16, 35, 65, 0.12);
+        background: rgba(255, 255, 255, 0.70);
+        padding: 12px;
+        width: 100%;
+      }
+
+      .word-right-rail .word-speed-controls.show,
+      .word-right-rail .word-learning-controls.show {
+        display: grid;
+        gap: 10px;
+        justify-items: center;
+        width: 100%;
+      }
+
+      .word-learning-reset {
+        display: none;
+        width: 100%;
+        border-radius: 16px;
+        border: 1px solid rgba(16, 35, 65, 0.12);
+        background: rgba(255, 255, 255, 0.70);
+        padding: 12px;
+        margin-top: 0;
+        text-align: center;
+        justify-self: stretch;
+      }
+
+      .word-learning-reset.show {
+        display: flex;
+        margin-left: auto;
+        margin-right: auto;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+      }
+
+      .word-right-rail .word-speed-title {
+        color: var(--text);
+        font-weight: 950;
+      }
+
+      .word-right-rail .word-speed-option {
+        border-color: rgba(16, 35, 65, 0.10);
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--text);
+      }
+
+      .word-right-rail .word-learning-btn {
+        border-color: rgba(16, 35, 65, 0.12);
+        background: rgba(255, 255, 255, 0.88);
+        color: var(--text);
+      }
+
+      .deck.word-mode .card,
+      .word-card-single .card {
+        width: min(560px, 94vw) !important;
+        max-width: 560px !important;
+        aspect-ratio: 16 / 9 !important;
+      }
+
+      /* Quiz mode layout */
+      .word-quiz-wrap {
+        display: flex;
+        gap: 26px;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 6px 0;
+      }
+
+      .word-quiz-q {
+        display: grid;
+        justify-items: center;
+      }
+
+      .word-quiz-options {
+        display: flex;
+        gap: 26px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .word-quiz-q .card {
+        width: min(420px, 92vw) !important;
+        max-width: 420px !important;
+        aspect-ratio: 1 / 1.25 !important;
+      }
+
+      .word-quiz-options .card {
+        width: min(310px, 46vw) !important;
+        max-width: 310px !important;
+        aspect-ratio: 16 / 9.6 !important;
+      }
+
+      /* Make quiz cards' typography fit their smaller sizes */
+      .word-quiz-q .word-single .kana {
+        font-size: clamp(40px, 5.2vw, 60px);
+      }
+
+      .word-quiz-q .word-single .romaji {
+        font-size: clamp(16px, 2.2vw, 24px);
+      }
+
+      .word-quiz-options .word-single .face {
+        padding: 14px 14px;
+      }
+
+      .word-quiz-options .word-single .meaning {
+        font-size: clamp(14px, 2.0vw, 20px);
+      }
+
+      .word-quiz-options .example-box {
+        margin-top: 10px;
+        padding: 10px 10px;
+      }
+
+      .word-quiz-options .example-ja {
+        font-size: clamp(12px, 1.8vw, 16px);
+      }
+
+      .word-quiz-options .example-zh {
+        font-size: clamp(11px, 1.6vw, 15px);
+      }
+
+      .card.quiz-correct {
+        --cardBg: rgba(43, 213, 115, 0.98) !important;
+        --cardAccent: rgba(43, 213, 115, 0.98) !important;
+        --cardBorder: rgba(43, 213, 115, 0.35) !important;
+        --cardBorderStrong: rgba(43, 213, 115, 0.98) !important;
+        --cardGlow: rgba(43, 213, 115, 0.20) !important;
+      }
+
+      .card.quiz-wrong {
+        --cardBg: rgba(255, 107, 107, 0.98) !important;
+        --cardAccent: rgba(255, 107, 107, 0.98) !important;
+        --cardBorder: rgba(255, 107, 107, 0.35) !important;
+        --cardBorderStrong: rgba(255, 107, 107, 0.98) !important;
+        --cardGlow: rgba(255, 107, 107, 0.22) !important;
+      }
+
+      .word-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 10px 10px 0;
+        width: 100%;
+      }
+
+      .word-bottom .word-nav-btn,
+      .word-bottom .word-speak-btn {
+        border-radius: 16px;
+        border: 1px solid rgba(16, 35, 65, 0.18);
+        background: rgba(255, 255, 255, 0.86);
+        color: var(--text);
+        box-shadow: 0 18px 50px rgba(16, 35, 65, 0.12);
+      }
+
+      @media (max-width: 820px) {
+        .word-stage {
+          grid-template-columns: 1fr 240px;
+          gap: 22px;
+        }
+        .word-right-rail {
+          grid-auto-flow: row;
+          grid-template-columns: 1fr;
+        }
+        .word-top {
+          width: 100%;
+          margin: 0 auto;
+          justify-content: flex-start;
+          max-width: 900px;
+        }
+      }
+
+      @media (max-width: 620px) {
+        .word-stage {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+        .word-top {
+          width: 100%;
+          margin: 0 auto;
+          justify-content: flex-start;
+          max-width: 900px;
+        }
+      }
+
+      .word-speed-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .word-speed-option {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(16, 35, 65, 0.10);
+        background: rgba(255, 255, 255, 0.85);
+        cursor: pointer;
+        user-select: none;
+        font-weight: 950;
+      }
+
+      .word-speed-option input {
+        margin: 0;
+      }
+
+      .word-learning-btn {
+        border-radius: 999px;
+        padding: 10px 18px;
+        border: 1px solid rgba(16, 35, 65, 0.12);
+        background: rgba(255, 255, 255, 0.88);
+        color: var(--text);
+        cursor: pointer;
+        font-weight: 1000;
+      }
+
+      .word-learning-btn.is-active {
+        border-color: rgba(45, 140, 255, 0.65);
+        background: rgba(168, 220, 255, 0.85);
+        box-shadow: 0 0 0 1px rgba(45, 140, 255, 0.55);
+      }
+
+      .card {
+        width: 100%;
+        aspect-ratio: 1 / 1.08;
+        max-width: 120px;
+        perspective: 900px;
+      }
+
+      .card button {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        cursor: pointer;
+        color: inherit;
+      }
+
+      .card[aria-disabled="true"] button {
+        cursor: default;
+      }
+
+      .card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        border-radius: 18px;
+        transform-style: preserve-3d;
+        transition: transform 520ms cubic-bezier(0.2, 0.9, 0.2, 1);
+        box-shadow: 0 14px 28px var(--shadow);
+      }
+
+      .card.is-flipped .card-inner {
+        transform: rotateY(180deg);
+      }
+
+      .face {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        border-radius: 18px;
+        backface-visibility: hidden;
+        border: 5px solid var(--cardBorderStrong, var(--cardBorder, var(--card-border)));
+        background: var(--cardBg, #ffffff);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.55),
+          inset 0 -14px 22px rgba(0, 0, 0, 0.10);
+      }
+
+      .face.front {
+        transform: rotateY(0deg);
+      }
+
+      .face.back {
+        transform: rotateY(180deg);
+      }
+
+      .question {
+        font-weight: 800;
+        font-size: 42px;
+        color: rgba(255, 255, 255, 0.78);
+        letter-spacing: 0.02em;
+      }
+
+      .kana {
+        font-size: 64px;
+        font-weight: 920;
+        color: #ffffff;
+        text-shadow: 0 14px 30px rgba(0, 0, 0, 0.14);
+      }
+
+      .romaji {
+        font-size: 26px;
+        color: rgba(255, 255, 255, 0.96);
+        letter-spacing: 0.20em;
+        font-weight: 900;
+        text-transform: lowercase;
+      }
+
+      .meaning {
+        font-size: 22px;
+        font-weight: 950;
+        color: rgba(255, 255, 255, 0.96);
+        text-align: center;
+        line-height: 1.3;
+        padding: 0 14px;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      /* Word-card layout: stack kana/romaji vertically. */
+      .word-front {
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .word-back {
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .word-single .kana {
+        font-size: clamp(44px, 6.5vw, 68px);
+        line-height: 1.06;
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: normal;
+        word-break: normal;
+        line-break: strict;
+        letter-spacing: 0.02em;
+        text-align: center;
+        padding: 0 12px;
+      }
+
+      .word-single .romaji {
+        font-size: clamp(20px, 2.3vw, 30px);
+        letter-spacing: 0.12em;
+        line-height: 1.08;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        max-width: 100%;
+        text-align: center;
+        padding: 0 12px;
+      }
+
+      .word-single .meaning {
+        font-size: clamp(18px, 2.8vw, 28px);
+        line-height: 1.25;
+      }
+
+      .example-box {
+        margin-top: 12px;
+        width: 100%;
+        border-radius: 16px;
+        padding: 10px 12px;
+        border: 2px solid rgba(45, 140, 255, 0.45);
+        background: rgba(235, 246, 255, 0.95);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.75),
+          0 10px 24px rgba(16, 35, 65, 0.10);
+      }
+
+      .example-ja {
+        font-size: clamp(16px, 2.2vw, 24px);
+        font-weight: 1000;
+        color: rgba(16, 35, 65, 0.92);
+        text-align: center;
+        line-height: 1.25;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .example-zh {
+        margin-top: 6px;
+        font-size: clamp(14px, 2.0vw, 22px);
+        font-weight: 900;
+        color: rgba(16, 35, 65, 0.78);
+        text-align: center;
+        line-height: 1.25;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .word-single .face {
+        padding: 20px 24px;
+      }
+
+      .deck.word-mode .card,
+      .word-card-single .card {
+        width: min(560px, 94vw) !important;
+        max-width: 560px !important;
+        aspect-ratio: 16 / 9 !important;
+      }
+
+      @media (max-width: 520px) {
+        .deck.word-mode .card,
+        .word-card-single .card {
+          width: min(520px, 96vw) !important;
+          max-width: 520px !important;
+          aspect-ratio: 16 / 10 !important;
+        }
+      }
+
+      .card.is-matched .face.front {
+        border-color: var(--cardBorderStrong, rgba(255, 255, 255, 0.35));
+        background: var(--cardBg, #ffffff);
+      }
+
+      .card.is-matched .face.back {
+        border-color: var(--cardBorderStrong, rgba(255, 255, 255, 0.35));
+        background: var(--cardBg, #ffffff);
+      }
+
+      .card-inner {
+        box-shadow:
+          0 14px 28px var(--shadow),
+          0 0 0 1px rgba(255, 255, 255, 0.06);
+      }
+
+      .card.is-matched .card-inner {
+        box-shadow:
+          0 18px 40px rgba(16, 35, 65, 0.16),
+          0 0 0 1px var(--cardBorderStrong, rgba(255, 255, 255, 0.28)),
+          0 0 26px var(--cardGlow, rgba(168, 220, 255, 0.18));
+      }
+
+      @keyframes bonk {
+        0% {
+          transform: translateY(0) scale(1);
+        }
+        22% {
+          transform: translateY(-7px) scale(1.12);
+        }
+        44% {
+          transform: translateY(0) scale(0.98);
+        }
+        68% {
+          transform: translateY(-3px) scale(1.05);
+        }
+        100% {
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      .card.is-bonking {
+        animation: bonk 520ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+      }
+
+      .bonk-toast {
+        position: fixed;
+        left: 50%;
+        top: 46%;
+        transform: translate(-50%, -50%) scale(0.92);
+        opacity: 0;
+        pointer-events: none;
+        z-index: 50;
+        padding: 14px 18px;
+        border-radius: 999px;
+        border: 1px solid rgba(16, 35, 65, 0.14);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
+        color: var(--text);
+        font-weight: 950;
+        letter-spacing: 0.04em;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .bonk-toast .accent {
+        color: var(--toastAccent, var(--accentOrange));
+        text-shadow: 0 10px 30px rgba(255, 138, 0, 0.18);
+      }
+
+      .bonk-toast.show {
+        opacity: 1;
+        animation: toastInOut 720ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+      }
+
+      .start-toast {
+        position: fixed;
+        left: 50%;
+        top: 36%;
+        transform: translate(-50%, -50%) scale(0.92);
+        opacity: 0;
+        pointer-events: none;
+        z-index: 60;
+        padding: 16px 24px;
+        border-radius: 999px;
+        border: 1px solid rgba(16, 35, 65, 0.18);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 30px 90px rgba(16, 35, 65, 0.22);
+        color: var(--text);
+        font-weight: 1000;
+        letter-spacing: 0.06em;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .center-start-overlay {
+        position: fixed;
+        left: 50%;
+        top: 52%;
+        transform: translate(-50%, -50%);
+        z-index: 40;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .center-start-overlay button {
+        pointer-events: auto;
+        min-width: 160px;
+        font-size: 18px;
+        padding: 12px 18px;
+        border-radius: 18px;
+        box-shadow: 0 18px 50px rgba(16, 35, 65, 0.18);
+      }
+
+      .center-start-overlay.hidden {
+        display: none;
+      }
+
+      .start-toast.show {
+        opacity: 1;
+        animation: startInOut 900ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+      }
+
+      @keyframes startInOut {
+        0% {
+          transform: translate(-50%, -50%) scale(0.86);
+          opacity: 0;
+        }
+        25% {
+          transform: translate(-50%, -50%) scale(1.1);
+          opacity: 1;
+        }
+        55% {
+          transform: translate(-50%, -58%) scale(1.0);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(-50%, -66%) scale(0.98);
+          opacity: 0;
+        }
+      }
+
+      @keyframes toastInOut {
+        0% {
+          transform: translate(-50%, -50%) scale(0.92);
+          opacity: 0;
+        }
+        25% {
+          transform: translate(-50%, -50%) scale(1.06);
+          opacity: 1;
+        }
+        70% {
+          transform: translate(-50%, -58%) scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(-50%, -62%) scale(0.98);
+          opacity: 0;
+        }
+      }
+
+      footer {
+        padding: 0 8px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.25;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .btn {
+        border-radius: 14px;
+        padding: 10px 14px;
+        border: 1px solid rgba(16, 35, 65, 0.12);
+        background: rgba(255, 255, 255, 0.80);
+        color: var(--text);
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.95);
+      }
+
+      .btn.primary {
+        border-color: rgba(58, 134, 255, 0.35);
+        background: rgba(168, 220, 255, 0.65);
+      }
+
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+
+      dialog {
+        width: min(520px, calc(100% - 28px));
+        border: 1px solid rgba(16, 35, 65, 0.12);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.93);
+        color: var(--text);
+        box-shadow: 0 26px 70px rgba(16, 35, 65, 0.22);
+      }
+
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.55);
+      }
+
+      .modal {
+        padding: 16px 16px 10px;
+      }
+
+      .modal h2 {
+        margin: 0;
+        font-size: 16px;
+        letter-spacing: 0.02em;
+      }
+
+      .modal p {
+        margin: 8px 0 14px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .mode-options {
+        width: 100%;
+        display: grid;
+        gap: 12px;
+        text-align: left;
+      }
+
+      .radio-row {
+        width: 100%;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(16, 35, 65, 0.12);
+        background: rgba(255, 255, 255, 0.78);
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .radio-row input {
+        margin-top: 3px;
+      }
+
+      .radio-row .txt {
+        display: grid;
+        gap: 4px;
+      }
+
+      .radio-row .title {
+        font-weight: 1000;
+        letter-spacing: 0.02em;
+        color: var(--text);
+      }
+
+      .radio-row .desc {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+
+      .rules-box {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(16, 35, 65, 0.10);
+        background: rgba(255, 255, 255, 0.70);
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+      }
+
+      .pair-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-weight: 800;
+      }
+
+      .pair-table td {
+        padding: 10px 8px;
+        border-top: 1px solid rgba(16, 35, 65, 0.10);
+        color: var(--muted);
+      }
+
+      .pair-table tr:first-child td {
+        border-top: 0;
+      }
+
+      .pair-table td:last-child {
+        text-align: right;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(50, 209, 138, 0.30);
+        background: rgba(50, 209, 138, 0.10);
+        color: var(--text);
+        font-weight: 900;
+      }
+
+      .win {
+        text-align: center;
+        display: grid;
+        gap: 10px;
+        padding: 18px 16px 8px;
+      }
+
+      .win .title {
+        font-size: 20px;
+        font-weight: 950;
+        letter-spacing: 0.02em;
+        margin: 0;
+      }
+
+      .win .sub {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .card-inner {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <button class="menu-btn" id="btnMode" type="button" aria-haspopup="dialog" aria-controls="modeDialog">
+          <span class="pill">MENU</span>
+        </button>
+
+        <div class="header-title" aria-label="日文對對碰">日文對對碰</div>
+
+        <div class="scorebar" aria-live="polite">
+          <div class="metric">
+            <div class="label">MOVES</div>
+            <div class="value" id="movesValue">0</div>
+          </div>
+
+          <div class="progress-track" aria-hidden="true">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+
+          <div class="metric">
+            <div class="label">LIFE</div>
+            <div class="value lives-value" id="livesValue">3</div>
+          </div>
+
+          <div class="metric">
+            <div class="label">TIME</div>
+            <div class="value" id="timeValue">0s</div>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section class="game-card">
+          <div class="deck" id="deck" aria-label="katakana memory deck"></div>
+          <div class="word-ui" id="wordUi" aria-hidden="true">
+            <div class="word-top">
+              <div class="word-panel" aria-label="主題選擇面板">
+                <div class="word-panel-title">主題選擇</div>
+                <div class="word-tabs" role="tablist" aria-label="單字主題選擇">
+                  <button class="word-tab" id="tabGreeting" type="button">打招呼</button>
+                  <button class="word-tab" id="tabNumbers" type="button">數字</button>
+                  <button class="word-tab" id="tabDaily" type="button">日常</button>
+                </div>
+              </div>
+
+              <div class="word-panel" aria-label="模式選擇面板">
+                <div class="word-panel-title">模式選擇</div>
+                <div class="word-mode-btns" aria-label="單字模式">
+                  <button class="word-mode-btn" id="btnWordModeReading" type="button">閱讀模式</button>
+                  <button class="word-mode-btn" id="btnWordModeLearning" type="button">學習模式</button>
+                  <button class="word-mode-btn" id="btnWordModeQuiz" type="button">測驗模式</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="word-stage">
+              <div class="word-card-column">
+                <div class="word-card-host" id="wordCardHost"></div>
+
+                <div class="word-bottom">
+                  <button class="word-nav-btn" id="btnWordPrev" type="button" aria-label="上一張">◀</button>
+                  <button class="word-speak-btn" id="btnWordSpeak" type="button" aria-label="朗讀">🔊</button>
+                  <button class="word-nav-btn" id="btnWordNext" type="button" aria-label="下一張">▶</button>
+                </div>
+
+                <div class="word-progress">
+                  <div class="word-dots" id="wordDots" aria-hidden="true"></div>
+                  <div class="word-counter" id="wordNavLabel">1/1</div>
+                </div>
+              </div>
+
+              <div class="word-right-rail">
+                <div class="word-speed-controls" id="wordSpeedControls" aria-hidden="true">
+                  <div class="word-speed-title">朗讀速度</div>
+                  <div class="word-speed-group" role="radiogroup" aria-label="朗讀速度">
+                    <label class="word-speed-option">
+                      <input type="radio" name="wordSpeed" value="slow" />
+                      <span>慢速</span>
+                    </label>
+                    <label class="word-speed-option">
+                      <input type="radio" name="wordSpeed" value="normal" checked />
+                      <span>適中</span>
+                    </label>
+                    <label class="word-speed-option">
+                      <input type="radio" name="wordSpeed" value="fast" />
+                      <span>快速</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="word-learning-controls" id="wordLearningControls" aria-hidden="true">
+                  <button class="word-learning-btn" id="btnWordKnown" type="button">已學會</button>
+                  <button class="word-learning-btn" id="btnWordAgain" type="button">還不熟</button>
+                </div>
+
+                <div class="word-learning-reset" id="wordLearningResetWrap" aria-hidden="true">
+                  <button class="word-learning-btn" id="btnWordResetLearning" type="button">重新開始</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <div class="hint">
+          翻開卡片配對「片假名」與「羅馬拼音」。<br />
+          點擊「參考表」可查看對照。
+        </div>
+        <div class="actions">
+          <button class="btn" id="btnReference" type="button">參考表</button>
+          <button class="btn" id="btnReset" type="button">重新開始</button>
+        </div>
+      </footer>
+    </div>
+
+    <div id="centerStartOverlay" class="center-start-overlay" aria-hidden="false">
+      <button class="btn primary" id="btnStart" type="button">開始</button>
+    </div>
+
+    <div id="bonkToast" class="bonk-toast" aria-hidden="true"></div>
+    <div id="startToast" class="start-toast" aria-hidden="true">START！！</div>
+    <div id="roundToast" class="start-toast" aria-hidden="true"></div>
+
+    <dialog id="referenceDialog">
+      <div class="modal">
+        <h2>片假名參考表</h2>
+        <p id="referenceDesc">這一關會練習片假名與羅馬拼音配對。</p>
+        <table class="pair-table" aria-label="katakana reference table">
+          <tbody id="referenceTbody"></tbody>
+        </table>
+      </div>
+      <div style="padding: 0 16px 16px; display: flex; justify-content: flex-end; gap: 10px">
+        <button class="btn" id="btnCloseReference" type="button">關閉</button>
+      </div>
+    </dialog>
+
+    <dialog id="modeDialog">
+      <div class="modal">
+        <h2>50音對對碰（限時）</h2>
+        <p>每局有 3 命，時間到會結束。快選一個模式開玩！</p>
+        <div class="mode-options" role="radiogroup" aria-label="difficulty">
+          <label class="radio-row">
+            <input type="radio" name="mode" value="1" />
+            <span class="txt">
+              <span class="title">5對<br />30秒</span>
+              <span class="desc">母音：ア・イ・ウ・エ・オ；每次嘗試：30秒內完成；共有 3 次機會</span>
+            </span>
+          </label>
+          <label class="radio-row">
+            <input type="radio" name="mode" value="2" />
+            <span class="txt">
+              <span class="title">10對<br />90秒</span>
+              <span class="desc">母音 + か行（カ・キ・ク・ケ・コ）；每次嘗試：90秒內完成；共有 3 次機會</span>
+            </span>
+          </label>
+          <label class="radio-row">
+            <input type="radio" name="mode" value="3" />
+            <span class="txt">
+              <span class="title">15對<br />180秒</span>
+              <span class="desc">母音 + か行 + さ行（カ・キ・ク・ケ・コ / サ・シ・ス・セ・ソ）；每次嘗試：180秒內完成；共有 3 次機會</span>
+            </span>
+          </label>
+        </div>
+        <div class="rules-box" id="rulesBox" aria-live="polite"></div>
+      </div>
+      <div style="padding: 0 16px 16px; display: flex; justify-content: flex-end; gap: 10px">
+        <button class="btn" id="btnCancelMode" type="button">取消</button>
+        <button class="btn primary" id="btnConfirmMode" type="button">套用</button>
+      </div>
+    </dialog>
+
+    <dialog id="gameSelectDialog">
+      <div class="modal">
+        <h2>選擇模式</h2>
+        <p>可選：對對碰（母音／母音＋か行／母音＋か行＋さ行）或日文單字卡。</p>
+        <div class="mode-options" role="radiogroup" aria-label="game type">
+          <label class="radio-row">
+            <input type="radio" name="gameType" value="kanaMatch" checked />
+            <span class="txt">
+              <span class="title">50音對對碰</span>
+              <span class="desc">限時 + 3次機會，成功通關會顯示恭喜。</span>
+            </span>
+          </label>
+          <label class="radio-row">
+            <input type="radio" name="gameType" value="wordCards" />
+            <span class="txt">
+              <span class="title">日文單字卡</span>
+              <span class="desc">點卡翻面顯示中文意思，可在頁面上切換類別與閱讀／學習模式。</span>
+            </span>
+          </label>
+        </div>
+      </div>
+      <div style="padding: 0 16px 16px; display: flex; justify-content: flex-end; gap: 10px">
+        <button class="btn" id="btnCancelGameSelect" type="button">取消</button>
+        <button class="btn primary" id="btnConfirmGameSelect" type="button">開始</button>
+      </div>
+    </dialog>
+
+    <dialog id="wordCategoryDialog">
+      <div class="modal">
+        <h2>選擇單字類別</h2>
+        <p>可選 打招呼用語 / 數字 / 日常常用語。</p>
+        <div class="mode-options" role="radiogroup" aria-label="word category">
+          <label class="radio-row">
+            <input type="radio" name="wordCategory" value="greeting" checked />
+            <span class="txt">
+              <span class="title">打招呼用語</span>
+              <span class="desc">例如：こんにちは、はじめまして</span>
+            </span>
+          </label>
+          <label class="radio-row">
+            <input type="radio" name="wordCategory" value="numbers" />
+            <span class="txt">
+              <span class="title">數字</span>
+              <span class="desc">例如：いち、に、さん</span>
+            </span>
+          </label>
+          <label class="radio-row">
+            <input type="radio" name="wordCategory" value="daily" />
+            <span class="txt">
+              <span class="title">日常常用語</span>
+              <span class="desc">例如：ありがとう、すみません</span>
+            </span>
+          </label>
+        </div>
+      </div>
+      <div style="padding: 0 16px 16px; display: flex; justify-content: flex-end; gap: 10px">
+        <button class="btn" id="btnCancelWordCategory" type="button">取消</button>
+        <button class="btn primary" id="btnConfirmWordCategory" type="button">開始</button>
+      </div>
+    </dialog>
+
+    <dialog id="wordModeDialog">
+      <div class="modal">
+        <h2>選擇模式</h2>
+        <p>閱讀模式：用箭頭切換單字即可。<br />學習模式：要把所有單字都標記為「已會」才會結束。</p>
+        <div class="mode-options" role="radiogroup" aria-label="word mode">
+          <label class="radio-row">
+            <input type="radio" name="wordMode" value="reading" checked />
+            <span class="txt">
+              <span class="title">閱讀模式</span>
+              <span class="desc">只看單字，翻面看中文，可朗讀</span>
+            </span>
+          </label>
+          <label class="radio-row">
+            <input type="radio" name="wordMode" value="learning" />
+            <span class="txt">
+              <span class="title">學習模式</span>
+              <span class="desc">標記「已會」，學完才會顯示恭喜</span>
+            </span>
+          </label>
+        </div>
+      </div>
+      <div style="padding: 0 16px 16px; display: flex; justify-content: flex-end; gap: 10px">
+        <button class="btn" id="btnCancelWordMode" type="button">取消</button>
+        <button class="btn primary" id="btnConfirmWordMode" type="button">開始</button>
+      </div>
+    </dialog>
+
+    <dialog id="winDialog">
+      <div class="win">
+        <p class="title">恭喜答題成功！</p>
+        <p class="sub" id="winSummary"></p>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 6px">
+          <button class="btn primary" id="btnPlayAgain" type="button">再玩一次</button>
+          <button class="btn" id="btnCloseWin" type="button">關閉</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="loseDialog">
+      <div class="win">
+        <p class="title">闖關失敗！</p>
+        <p class="sub" id="loseSummary"></p>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 6px">
+          <button class="btn primary" id="btnLosePlayAgain" type="button">再玩一次</button>
+          <button class="btn" id="btnLoseClose" type="button">關閉</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="timeoutDialog">
+      <div class="win">
+        <p class="title">時間到！</p>
+        <p class="sub" id="timeoutSummary"></p>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 6px">
+          <button class="btn primary" id="btnTimeoutRetry" type="button">再試一次</button>
+          <button class="btn" id="btnTimeoutClose" type="button">結束</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="wordDoneDialog">
+      <div class="win">
+        <p class="title">恭喜學完所有單字！</p>
+        <p class="sub" id="wordDoneSummary">你已把本回合的所有單字標記為「已會」。</p>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 6px">
+          <button class="btn primary" id="btnWordDoneNext" type="button">回到選單</button>
+          <button class="btn" id="btnWordDoneClose" type="button">關閉</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="wordQuizDoneDialog">
+      <div class="win">
+        <p class="title">恭喜答題完成！</p>
+        <p class="sub" id="wordQuizDoneSummary">你已完成本回合測驗。</p>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 6px">
+          <button class="btn primary" id="btnWordQuizDoneNext" type="button">回到選單</button>
+          <button class="btn" id="btnWordQuizDoneClose" type="button">關閉</button>
+        </div>
+      </div>
+    </dialog>
+
+    <template id="wordControlsHome">
+      <div></div>
+    </template>
+
+    <script>
+      // =========
+      // Data
+      // =========
+      const VOWELS = [
+        { kana: "ア", romaji: "a", color: "#9EE7FF" },
+        { kana: "イ", romaji: "i", color: "#FFCAAF" },
+        { kana: "ウ", romaji: "u", color: "#B8F2E6" },
+        { kana: "エ", romaji: "e", color: "#FFD6E8" },
+        { kana: "オ", romaji: "o", color: "#C9D6FF" },
+      ];
+
+      const KA_LINE = [
+        { kana: "カ", romaji: "ka", color: "#A7E3FF" },
+        { kana: "キ", romaji: "ki", color: "#FFB3C7" },
+        { kana: "ク", romaji: "ku", color: "#B4F8D0" },
+        { kana: "ケ", romaji: "ke", color: "#FFCC80" },
+        { kana: "コ", romaji: "ko", color: "#CBB4FF" },
+      ];
+
+      const SA_LINE = [
+        { kana: "サ", romaji: "sa", color: "#9FE8FF" },
+        { kana: "シ", romaji: "shi", color: "#FF9FC8" },
+        { kana: "ス", romaji: "su", color: "#FFE29F" },
+        { kana: "セ", romaji: "se", color: "#9FD6FF" },
+        { kana: "ソ", romaji: "so", color: "#FFC6A0" },
+      ];
+
+      function getPairsForMode(mode) {
+        if (mode === 1) return VOWELS.slice();
+        if (mode === 2) return VOWELS.concat(KA_LINE);
+        // mode === 3: 母音 + か行 + さ行
+        return VOWELS.concat(KA_LINE, SA_LINE);
+      }
+
+      // 50音（五十音）: あ段〜わ段 + ん + ヴ
+      const GOJUON_50 = [
+        { kana: "ア", romaji: "a" },
+        { kana: "イ", romaji: "i" },
+        { kana: "ウ", romaji: "u" },
+        { kana: "エ", romaji: "e" },
+        { kana: "オ", romaji: "o" },
+
+        { kana: "カ", romaji: "ka" },
+        { kana: "キ", romaji: "ki" },
+        { kana: "ク", romaji: "ku" },
+        { kana: "ケ", romaji: "ke" },
+        { kana: "コ", romaji: "ko" },
+
+        { kana: "サ", romaji: "sa" },
+        { kana: "シ", romaji: "shi" },
+        { kana: "ス", romaji: "su" },
+        { kana: "セ", romaji: "se" },
+        { kana: "ソ", romaji: "so" },
+
+        { kana: "タ", romaji: "ta" },
+        { kana: "チ", romaji: "chi" },
+        { kana: "ツ", romaji: "tsu" },
+        { kana: "テ", romaji: "te" },
+        { kana: "ト", romaji: "to" },
+
+        { kana: "ナ", romaji: "na" },
+        { kana: "ニ", romaji: "ni" },
+        { kana: "ヌ", romaji: "nu" },
+        { kana: "ネ", romaji: "ne" },
+        { kana: "ノ", romaji: "no" },
+
+        { kana: "ハ", romaji: "ha" },
+        { kana: "ヒ", romaji: "hi" },
+        { kana: "フ", romaji: "fu" },
+        { kana: "ヘ", romaji: "he" },
+        { kana: "ホ", romaji: "ho" },
+
+        { kana: "マ", romaji: "ma" },
+        { kana: "ミ", romaji: "mi" },
+        { kana: "ム", romaji: "mu" },
+        { kana: "メ", romaji: "me" },
+        { kana: "モ", romaji: "mo" },
+
+        { kana: "ヤ", romaji: "ya" },
+        { kana: "ユ", romaji: "yu" },
+        { kana: "ヨ", romaji: "yo" },
+
+        { kana: "ラ", romaji: "ra" },
+        { kana: "リ", romaji: "ri" },
+        { kana: "ル", romaji: "ru" },
+        { kana: "レ", romaji: "re" },
+        { kana: "ロ", romaji: "ro" },
+
+        { kana: "ワ", romaji: "wa" },
+        { kana: "ウィ", romaji: "wi" },
+        { kana: "ウゥ", romaji: "wu" },
+        { kana: "ウェ", romaji: "we" },
+        { kana: "ヲ", romaji: "wo" },
+
+        { kana: "ン", romaji: "n" },
+        { kana: "ヴ", romaji: "vu" },
+      ];
+
+      function getTimeLimitSeconds(mode) {
+        if (mode === 1) return 30;
+        if (mode === 2) return 90;
+        return 180;
+      }
+
+      // =========
+      // State
+      // =========
+      const deckEl = document.getElementById("deck");
+      const movesValueEl = document.getElementById("movesValue");
+      const timeValueEl = document.getElementById("timeValue");
+      const progressFillEl = document.getElementById("progressFill");
+
+      const btnStart = document.getElementById("btnStart");
+      const btnReset = document.getElementById("btnReset");
+      const btnReference = document.getElementById("btnReference");
+      const referenceDialog = document.getElementById("referenceDialog");
+      const btnCloseReference = document.getElementById("btnCloseReference");
+      const referenceTbody = document.getElementById("referenceTbody");
+
+      const winDialog = document.getElementById("winDialog");
+      const winSummaryEl = document.getElementById("winSummary");
+      const btnPlayAgain = document.getElementById("btnPlayAgain");
+      const btnCloseWin = document.getElementById("btnCloseWin");
+
+      const livesValueEl = document.getElementById("livesValue");
+
+      const loseDialog = document.getElementById("loseDialog");
+      const loseSummaryEl = document.getElementById("loseSummary");
+      const btnLosePlayAgain = document.getElementById("btnLosePlayAgain");
+      const btnLoseClose = document.getElementById("btnLoseClose");
+
+      const timeoutDialog = document.getElementById("timeoutDialog");
+      const timeoutSummaryEl = document.getElementById("timeoutSummary");
+      const btnTimeoutRetry = document.getElementById("btnTimeoutRetry");
+      const btnTimeoutClose = document.getElementById("btnTimeoutClose");
+
+      const startToastEl = document.getElementById("startToast");
+      const roundToastEl = document.getElementById("roundToast");
+      const rulesBoxEl = document.getElementById("rulesBox");
+      const centerStartOverlay = document.getElementById("centerStartOverlay");
+      const headerTitleEl = document.querySelector(".header-title");
+      const wordUi = document.getElementById("wordUi");
+      const tabGreeting = document.getElementById("tabGreeting");
+      const tabNumbers = document.getElementById("tabNumbers");
+      const tabDaily = document.getElementById("tabDaily");
+      const btnWordModeReading = document.getElementById("btnWordModeReading");
+      const btnWordModeLearning = document.getElementById("btnWordModeLearning");
+      const btnWordModeQuiz = document.getElementById("btnWordModeQuiz");
+      const wordDots = document.getElementById("wordDots");
+      const wordCardHost = document.getElementById("wordCardHost");
+
+      const btnWordPrev = document.getElementById("btnWordPrev");
+      const btnWordNext = document.getElementById("btnWordNext");
+      const btnWordSpeak = document.getElementById("btnWordSpeak");
+      const wordNavLabel = document.getElementById("wordNavLabel");
+      const wordSpeedControls = document.getElementById("wordSpeedControls");
+      const wordSpeedInputs = document.querySelectorAll('input[name="wordSpeed"]');
+      const wordLearningControls = document.getElementById("wordLearningControls");
+      const btnWordKnown = document.getElementById("btnWordKnown");
+      const btnWordAgain = document.getElementById("btnWordAgain");
+      const btnWordResetLearning = document.getElementById("btnWordResetLearning");
+      const wordLearningResetWrap = document.getElementById("wordLearningResetWrap");
+      const wordDoneDialog = document.getElementById("wordDoneDialog");
+      const wordDoneSummary = document.getElementById("wordDoneSummary");
+      const btnWordDoneNext = document.getElementById("btnWordDoneNext");
+      const btnWordDoneClose = document.getElementById("btnWordDoneClose");
+
+      const wordQuizDoneDialog = document.getElementById("wordQuizDoneDialog");
+      const wordQuizDoneSummary = document.getElementById("wordQuizDoneSummary");
+      const btnWordQuizDoneNext = document.getElementById("btnWordQuizDoneNext");
+      const btnWordQuizDoneClose = document.getElementById("btnWordQuizDoneClose");
+      const footerHintEl = document.querySelector(".hint");
+
+      let cards = [];
+      let flippedIds = []; // currently flipped, not yet matched
+      let matchedPairIds = new Set();
+      let lock = false; // disable clicking while checking
+
+      let activeMode = 1;
+      let activePairs = getPairsForMode(activeMode);
+      let timeLimitSeconds = getTimeLimitSeconds(activeMode);
+
+      let currentGameType = "kanaMatch"; // "kanaMatch" | "wordCards"
+      let wordCards = [];
+      let wordIndex = 0;
+      let activeWordCategory = "greeting";
+      let activeWordMode = "reading"; // reading | learning | quiz
+      let wordSpeakRate = 1.0;
+      let wordKnown = []; // true: 已經會
+      let wordRemaining = 0; // 尚未學會的數量
+
+      // quiz mode state
+      let quizAnswered = false; // current question already answered?
+      let quizCorrectCount = 0; // number of correct answers this round
+
+      let lives = 3;
+      let gameEnded = false;
+      let startTimeMs = 0;
+      let remainingSeconds = timeLimitSeconds;
+
+      let timerInterval = null;
+      let pendingFlipBackTimeout = null;
+      let pendingStartCountdownTimeout = null;
+
+      let moves = 0;
+
+      // =========
+      // Helpers
+      // =========
+      function shuffle(array) {
+        const a = array.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function hexToRgba(hex, alpha) {
+        const value = String(hex).trim();
+        if (!value.startsWith("#") || value.length !== 7) return `rgba(255,255,255,${alpha})`;
+        const r = parseInt(value.slice(1, 3), 16);
+        const g = parseInt(value.slice(3, 5), 16);
+        const b = parseInt(value.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+
+      function formatTime(seconds) {
+        return `${Math.floor(seconds)}s`;
+      }
+
+      function setProgress() {
+        const totalPairs = activePairs.length;
+        const donePairs = matchedPairIds.size;
+        const ratio = donePairs / totalPairs;
+        progressFillEl.style.width = `${Math.round(ratio * 100)}%`;
+      }
+
+      function startCountdown() {
+        if (timerInterval) clearInterval(timerInterval);
+
+        startTimeMs = Date.now();
+        remainingSeconds = timeLimitSeconds;
+        lock = false;
+        if (btnStart) btnStart.disabled = true;
+        if (centerStartOverlay) centerStartOverlay.classList.add("hidden");
+
+        timerInterval = setInterval(() => {
+          const elapsed = (Date.now() - startTimeMs) / 1000;
+          remainingSeconds = timeLimitSeconds - elapsed;
+          const clamped = Math.max(0, remainingSeconds);
+          timeValueEl.textContent = `${Math.ceil(clamped)}s`;
+
+          if (remainingSeconds <= 0) {
+            timeValueEl.textContent = "0s";
+            handleRoundTimeout();
+          }
+        }, 100);
+      }
+
+      function stopTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = null;
+      }
+
+      function showStartToast() {
+        if (!startToastEl) return;
+        startToastEl.textContent = "START！！";
+        startToastEl.classList.remove("show");
+        // Force reflow so animation can replay.
+        // eslint-disable-next-line no-unused-expressions
+        startToastEl.offsetHeight;
+        startToastEl.classList.add("show");
+        setTimeout(() => startToastEl.classList.remove("show"), 950);
+      }
+
+      function showRoundToast(text) {
+        if (!roundToastEl) return;
+        roundToastEl.textContent = text;
+        roundToastEl.classList.remove("show");
+        // Force reflow so animation can replay.
+        // eslint-disable-next-line no-unused-expressions
+        roundToastEl.offsetHeight;
+        roundToastEl.classList.add("show");
+        setTimeout(() => roundToastEl.classList.remove("show"), 1100);
+      }
+
+      function handleRoundTimeout() {
+        if (gameEnded) return;
+
+        lock = true;
+        gameEnded = true;
+        stopTimer();
+        if (centerStartOverlay) centerStartOverlay.classList.add("hidden");
+
+        lives = Math.max(0, lives - 1);
+        if (livesValueEl) {
+          livesValueEl.textContent = String(lives);
+          if (lives <= 1) livesValueEl.classList.add("low");
+          else livesValueEl.classList.remove("low");
+        }
+
+        if (lives <= 0) {
+          endGame("lives");
+          return;
+        }
+
+        if (typeof timeoutDialog?.showModal === "function") {
+          timeoutSummaryEl.textContent = `扣 1 命，還剩 ${lives} 命。請按「再試一次」開始下一回合。`;
+          timeoutDialog.showModal();
+        } else {
+          timeoutDialog.open = true;
+        }
+      }
+
+      function endGame(reason) {
+        if (gameEnded) return;
+        gameEnded = true;
+        lock = true;
+        stopTimer();
+        if (centerStartOverlay) centerStartOverlay.classList.add("hidden");
+
+        if (pendingStartCountdownTimeout) {
+          clearTimeout(pendingStartCountdownTimeout);
+          pendingStartCountdownTimeout = null;
+        }
+
+        if (pendingFlipBackTimeout) {
+          clearTimeout(pendingFlipBackTimeout);
+          pendingFlipBackTimeout = null;
+        }
+
+        const donePairs = matchedPairIds.size;
+        const reasonText = reason === "lives" ? "命用完了！" : "時間到啦！";
+        loseSummaryEl.textContent = `${reasonText} 你完成了 ${donePairs} / ${activePairs.length} 對。你用了 ${moves} 次。`;
+
+        if (typeof loseDialog?.showModal === "function") loseDialog.showModal();
+        else loseDialog.open = true;
+      }
+
+      function resetGame({ resetLives = false, autoStart = false } = {}) {
+        if (pendingStartCountdownTimeout) {
+          clearTimeout(pendingStartCountdownTimeout);
+          pendingStartCountdownTimeout = null;
+        }
+
+        if (pendingFlipBackTimeout) {
+          clearTimeout(pendingFlipBackTimeout);
+          pendingFlipBackTimeout = null;
+        }
+        stopTimer();
+        gameEnded = false;
+        moves = 0;
+        flippedIds = [];
+        matchedPairIds = new Set();
+        // Lock until countdown starts.
+        lock = true;
+
+        if (btnStart) btnStart.disabled = !!autoStart;
+        if (centerStartOverlay) centerStartOverlay.classList.toggle("hidden", !!autoStart);
+
+        activePairs = getPairsForMode(activeMode);
+        timeLimitSeconds = getTimeLimitSeconds(activeMode);
+        if (resetLives) lives = 3;
+
+        remainingSeconds = timeLimitSeconds;
+
+        movesValueEl.textContent = "0";
+        timeValueEl.textContent = `${timeLimitSeconds}s`;
+        if (livesValueEl) livesValueEl.textContent = String(lives);
+        if (livesValueEl) {
+          if (lives <= 1) livesValueEl.classList.add("low");
+          else livesValueEl.classList.remove("low");
+        }
+        progressFillEl.style.width = "0%";
+
+        // Build deck: for each target pair, create one kana card and one romaji card.
+        const rawCards = [];
+        activePairs.forEach((p, idx) => {
+          rawCards.push({
+            id: `p${idx}-kana`,
+            pairId: idx,
+            kind: "kana",
+            value: p.kana,
+            pairColor: p.color ?? "#2d8cff",
+          });
+          rawCards.push({
+            id: `p${idx}-romaji`,
+            pairId: idx,
+            kind: "romaji",
+            value: p.romaji,
+            pairColor: p.color ?? "#ff8a3d",
+          });
+        });
+
+        cards = shuffle(rawCards);
+        deckEl.innerHTML = "";
+
+        const frag = document.createDocumentFragment();
+        cards.forEach((card) => {
+          const cell = document.createElement("div");
+          cell.className = "card";
+          cell.dataset.cardId = card.id;
+          cell.setAttribute("aria-disabled", "false");
+
+          // Card border/text color: Japanese (kana) one color, Romaji (EN) another.
+          const accent = card.kind === "kana" ? "#6AC3FF" : "#FF9F3D";
+          cell.style.setProperty("--cardAccent", accent);
+          cell.style.setProperty("--cardBg", accent);
+          cell.style.setProperty("--cardBorder", hexToRgba(accent, 0.42));
+          cell.style.setProperty("--cardBorderStrong", hexToRgba(accent, 0.95));
+          cell.style.setProperty("--cardGlow", hexToRgba(accent, 0.20));
+
+          const button = document.createElement("button");
+          button.type = "button";
+          button.setAttribute("aria-label", "翻牌卡片");
+
+          const inner = document.createElement("div");
+          inner.className = "card-inner";
+
+          const front = document.createElement("div");
+          front.className = "face front";
+          const q = document.createElement("div");
+          q.className = "question";
+          q.textContent = "?";
+          front.appendChild(q);
+
+          const back = document.createElement("div");
+          back.className = "face back";
+          if (card.kind === "kana") {
+            const kana = document.createElement("div");
+            kana.className = "kana";
+            kana.textContent = card.value;
+            back.appendChild(kana);
+          } else {
+            const romaji = document.createElement("div");
+            romaji.className = "romaji";
+            romaji.textContent = card.value;
+            back.appendChild(romaji);
+          }
+
+          inner.appendChild(front);
+          inner.appendChild(back);
+
+          button.appendChild(inner);
+          cell.appendChild(button);
+          frag.appendChild(cell);
+
+          button.addEventListener("click", () => onCardClick(card.id));
+        });
+
+        deckEl.appendChild(frag);
+        setProgress();
+
+        if (autoStart) {
+          showStartToast();
+          // Start countdown shortly after showing the start animation.
+          pendingStartCountdownTimeout = setTimeout(() => {
+            pendingStartCountdownTimeout = null;
+            if (!gameEnded) startCountdown();
+          }, 650);
+        }
+      }
+
+      function initIdle() {
+        // Build cards but keep them locked until user presses the center Start button.
+        if (wordUi) {
+          wordUi.classList.remove("show");
+          wordUi.setAttribute("aria-hidden", "true");
+        }
+        if (wordSpeedControls) {
+          wordSpeedControls.classList.remove("show");
+          wordSpeedControls.setAttribute("aria-hidden", "true");
+        }
+        if (wordLearningControls) {
+          wordLearningControls.classList.remove("show");
+          wordLearningControls.setAttribute("aria-hidden", "true");
+        }
+        resetGame({ resetLives: true, autoStart: false });
+      }
+
+      function initLanding() {
+        stopTimer();
+        gameEnded = true;
+        lock = true;
+
+        cards = [];
+        flippedIds = [];
+        matchedPairIds = new Set();
+        moves = 0;
+
+        if (centerStartOverlay) centerStartOverlay.classList.add("hidden");
+        if (btnStart) btnStart.disabled = true;
+
+        deckEl.innerHTML = "";
+
+        if (wordUi) {
+          wordUi.classList.remove("show");
+          wordUi.setAttribute("aria-hidden", "true");
+        }
+
+        if (wordSpeedControls) {
+          wordSpeedControls.classList.remove("show");
+          wordSpeedControls.setAttribute("aria-hidden", "true");
+        }
+        if (wordLearningControls) {
+          wordLearningControls.classList.remove("show");
+          wordLearningControls.setAttribute("aria-hidden", "true");
+        }
+      }
+
+      function buildWordSingleCard(word, idx, opts = {}) {
+        const { enableFlip = true } = opts;
+        const cell = document.createElement("div");
+        cell.className = "card word-single";
+        cell.dataset.wordId = word.id;
+
+        // Whole card is one solid color (blue/orange).
+        const accent = "#2d8cff";
+        cell.style.setProperty("--cardBg", accent);
+        cell.style.setProperty("--cardAccent", accent);
+        cell.style.setProperty("--cardBorder", hexToRgba(accent, 0.35));
+        cell.style.setProperty("--cardBorderStrong", hexToRgba(accent, 0.98));
+        cell.style.setProperty("--cardGlow", hexToRgba(accent, 0.20));
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.setAttribute("aria-label", "翻面單字卡");
+
+        const inner = document.createElement("div");
+        inner.className = "card-inner";
+
+        const front = document.createElement("div");
+        front.className = "face front word-front";
+        const kana = document.createElement("div");
+        kana.className = "kana";
+        kana.textContent = word.kana;
+        const romaji = document.createElement("div");
+        romaji.className = "romaji";
+        romaji.textContent = word.romaji;
+        front.appendChild(kana);
+        front.appendChild(romaji);
+
+        const back = document.createElement("div");
+        back.className = "face back word-back";
+        const meaning = document.createElement("div");
+        meaning.className = "meaning";
+        meaning.textContent = word.meaning;
+        back.appendChild(meaning);
+
+        // Example box (Japanese + Chinese).
+        const example = document.createElement("div");
+        example.className = "example-box";
+
+        const exampleJa = document.createElement("div");
+        exampleJa.className = "example-ja";
+        const fallbackJa = `${word.kana}です。`;
+        const fallbackZh = `${word.meaning}`;
+        exampleJa.textContent = word.exampleJa || fallbackJa;
+
+        const exampleZh = document.createElement("div");
+        exampleZh.className = "example-zh";
+        exampleZh.textContent = word.exampleZh || fallbackZh;
+
+        example.appendChild(exampleJa);
+        example.appendChild(exampleZh);
+        back.appendChild(example);
+
+        inner.appendChild(front);
+        inner.appendChild(back);
+        button.appendChild(inner);
+        cell.appendChild(button);
+
+        if (enableFlip) {
+          button.addEventListener("click", () => {
+            cell.classList.toggle("is-flipped");
+          });
+        }
+
+        return cell;
+      }
+
+      function updateWordNavLabel() {
+        if (!wordNavLabel) return;
+        const total = wordCards?.length ?? 1;
+        if (activeWordMode === "learning") {
+          const remain = wordRemaining ?? total;
+          wordNavLabel.textContent = `${wordIndex + 1}/${total}（未學會 ${remain}）`;
+        } else if (activeWordMode === "quiz") {
+          wordNavLabel.textContent = `${wordIndex + 1}/${total}（題）`;
+        } else {
+          wordNavLabel.textContent = `${wordIndex + 1}/${total}`;
+        }
+      }
+
+      function updateWordNavButtons() {
+        if (!btnWordPrev || !btnWordNext) return;
+        if (activeWordMode === "quiz") {
+          const total = wordCards?.length ?? 1;
+          const canNav = quizAnswered;
+          btnWordPrev.disabled = !canNav || wordIndex <= 0;
+          btnWordNext.disabled = !canNav || wordIndex >= total - 1;
+          return;
+        }
+        // In learning mode, navigation is driven by the "已會/還要再讀" flow.
+        if (wordLearningControls?.classList.contains("show")) {
+          btnWordPrev.disabled = true;
+          btnWordNext.disabled = true;
+          return;
+        }
+        const total = wordCards?.length ?? 1;
+        btnWordPrev.disabled = wordIndex <= 0;
+        btnWordNext.disabled = wordIndex >= total - 1;
+      }
+
+      function findAnyUnknownIndex() {
+        if (!wordCards?.length) return -1;
+        for (let i = 0; i < wordCards.length; i++) {
+          if (!wordKnown?.[i]) return i;
+        }
+        return -1;
+      }
+
+      function findNextUnknownAfter(index) {
+        if (!wordCards?.length) return -1;
+        const len = wordCards.length;
+        for (let step = 1; step < len; step++) {
+          const j = (index + step) % len;
+          if (!wordKnown?.[j]) return j;
+        }
+        return -1;
+      }
+
+      function finishWordLearning() {
+        lock = true;
+        if (wordLearningControls) {
+          wordLearningControls.classList.remove("show");
+          wordLearningControls.setAttribute("aria-hidden", "true");
+        }
+        if (wordDoneSummary) {
+          wordDoneSummary.textContent = `恭喜學完所有單字！本回合共 ${wordCards.length} 個單字。`;
+        }
+        if (typeof wordDoneDialog?.showModal === "function") wordDoneDialog.showModal();
+        else wordDoneDialog.open = true;
+      }
+
+      function getWordsByCategory(category) {
+        // Ensure categories don't overlap.
+        const greeting = [
+          {
+            kana: "こんにちは",
+            romaji: "konnichiwa",
+            meaning: "你好",
+            exampleJa: "こんにちは。きょうもいい天気ですね。",
+            exampleZh: "你好，今天天氣真不錯呢。",
+          },
+          {
+            kana: "おはよう",
+            romaji: "ohayou",
+            meaning: "早安",
+            exampleJa: "おはよう。もう朝ごはんを食べましたか。",
+            exampleZh: "早安，你已經吃早餐了嗎？",
+          },
+          {
+            kana: "こんばんは",
+            romaji: "konbanwa",
+            meaning: "晚安／晚上好",
+            exampleJa: "こんばんは。またあした会いましょう。",
+            exampleZh: "晚上好，我們明天再見。",
+          },
+          {
+            kana: "はじめまして",
+            romaji: "hajimemashite",
+            meaning: "初次見面",
+            exampleJa: "はじめまして。田中と申します。",
+            exampleZh: "初次見面，我叫田中。",
+          },
+          {
+            kana: "よろしくおねがいします",
+            romaji: "yoroshikuonegaishimasu",
+            meaning: "請多指教",
+            exampleJa: "これからもよろしくおねがいします。",
+            exampleZh: "今後也請多多指教。",
+          },
+          {
+            kana: "おやすみ",
+            romaji: "oyasumi",
+            meaning: "晚安（睡前）",
+            exampleJa: "おやすみ。またあした。",
+            exampleZh: "晚安，明天見。",
+          },
+        ];
+
+        const numbers = [
+          {
+            kana: "ぜろ",
+            romaji: "zero",
+            meaning: "零 / 0",
+            exampleJa: "りんごはぜろこです。",
+            exampleZh: "蘋果是零顆。",
+          },
+          {
+            kana: "いち",
+            romaji: "ichi",
+            meaning: "一 / 1",
+            exampleJa: "りんごをいっこ食べます。",
+            exampleZh: "我吃一顆蘋果。",
+          },
+          {
+            kana: "に",
+            romaji: "ni",
+            meaning: "二 / 2",
+            exampleJa: "りんごをにこ買いました。",
+            exampleZh: "我買了兩顆蘋果。",
+          },
+          {
+            kana: "さん",
+            romaji: "san",
+            meaning: "三 / 3",
+            exampleJa: "テーブルの上にりんごがさんこあります。",
+            exampleZh: "桌上有三顆蘋果。",
+          },
+          {
+            kana: "よん",
+            romaji: "yon",
+            meaning: "四 / 4",
+            exampleJa: "りんごをよんこに分けます。",
+            exampleZh: "把蘋果分成四份。",
+          },
+          {
+            kana: "ご",
+            romaji: "go",
+            meaning: "五 / 5",
+            exampleJa: "りんごをごこください。",
+            exampleZh: "請給我五顆蘋果。",
+          },
+          {
+            kana: "ろく",
+            romaji: "roku",
+            meaning: "六 / 6",
+            exampleJa: "クラスに日本人がろくにんいます。",
+            exampleZh: "班上有六位日本人。",
+          },
+          {
+            kana: "なな",
+            romaji: "nana",
+            meaning: "七 / 7",
+            exampleJa: "ななじにおきます。",
+            exampleZh: "我七點起床。",
+          },
+          {
+            kana: "はち",
+            romaji: "hachi",
+            meaning: "八 / 8",
+            exampleJa: "はちじに学校へ行きます。",
+            exampleZh: "我八點去學校。",
+          },
+          {
+            kana: "きゅう",
+            romaji: "kyuu",
+            meaning: "九 / 9",
+            exampleJa: "きゅうじまで勉強します。",
+            exampleZh: "我學習到九點。",
+          },
+          {
+            kana: "じゅう",
+            romaji: "juu",
+            meaning: "十 / 10",
+            exampleJa: "りんごがじゅっこそろいました。",
+            exampleZh: "蘋果剛好湊齊十顆。",
+          },
+        ];
+
+        const daily = [
+          {
+            kana: "ありがとう",
+            romaji: "arigatou",
+            meaning: "謝謝",
+            exampleJa: "ありがとう！たすかりました。",
+            exampleZh: "謝謝！幫了大忙。",
+          },
+          {
+            kana: "すみません",
+            romaji: "sumimasen",
+            meaning: "不好意思／打擾了",
+            exampleJa: "すみません、トイレはどこですか。",
+            exampleZh: "不好意思，廁所在哪裡？",
+          },
+          {
+            kana: "はい",
+            romaji: "hai",
+            meaning: "是／好的",
+            exampleJa: "はい、わかりました。",
+            exampleZh: "好的，我知道了。",
+          },
+          {
+            kana: "いいえ",
+            romaji: "iie",
+            meaning: "不是／不",
+            exampleJa: "いいえ、ちがいます。",
+            exampleZh: "不是，不對。",
+          },
+          {
+            kana: "ごめんなさい",
+            romaji: "gomennasai",
+            meaning: "對不起",
+            exampleJa: "ごめんなさい。おくれました。",
+            exampleZh: "對不起，我遲到了。",
+          },
+          {
+            kana: "お願いします",
+            romaji: "onegaishimasu",
+            meaning: "拜託／請",
+            exampleJa: "これ、お願いします。",
+            exampleZh: "這個，麻煩你了（請幫我處理）。",
+          },
+        ];
+
+        if (category === "numbers") return numbers;
+        if (category === "daily") return daily;
+        return greeting;
+      }
+
+      function speakCurrentWord() {
+        if (!wordCards?.length) return;
+        const w = wordCards[wordIndex];
+        if (!w) return;
+        if (!("speechSynthesis" in window)) return;
+        try {
+          speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(w.kana);
+          utter.lang = "ja-JP";
+          utter.rate = wordSpeakRate;
+          utter.pitch = 1.0;
+          speechSynthesis.speak(utter);
+        } catch {
+          // Ignore.
+        }
+      }
+
+      function renderWordSingle() {
+        if (!wordCards?.length) return;
+        const w = wordCards[wordIndex];
+        if (!w) return;
+
+        deckEl.classList.add("word-mode");
+        if (wordCardHost) {
+          wordCardHost.classList.add("word-card-single");
+          wordCardHost.classList.remove("word-quiz");
+          wordCardHost.innerHTML = "";
+          wordCardHost.appendChild(buildWordSingleCard(w, wordIndex, { enableFlip: true }));
+        } else {
+          deckEl.innerHTML = "";
+          deckEl.appendChild(buildWordSingleCard(w, wordIndex, { enableFlip: true }));
+        }
+
+        updateWordNavLabel();
+        updateWordNavButtons();
+        updateWordDots();
+      }
+
+      function renderWordCurrent() {
+        if (activeWordMode === "quiz") {
+          renderWordQuiz();
+        } else {
+          renderWordSingle();
+        }
+      }
+
+      function finishWordQuiz() {
+        if (wordQuizDoneSummary) {
+          wordQuizDoneSummary.textContent = `本回合共 ${wordCards.length} 題，答對 ${quizCorrectCount} 題。`;
+        }
+        if (typeof wordQuizDoneDialog?.showModal === "function") wordQuizDoneDialog.showModal();
+        else wordQuizDoneDialog.open = true;
+      }
+
+      function renderWordQuiz() {
+        if (!wordCards?.length) return;
+        const question = wordCards[wordIndex];
+        if (!question) return;
+
+        deckEl.classList.add("word-mode");
+        if (wordCardHost) {
+          wordCardHost.classList.add("word-quiz");
+          wordCardHost.classList.remove("word-card-single");
+          wordCardHost.innerHTML = "";
+        } else {
+          deckEl.innerHTML = "";
+        }
+
+        const wrap = document.createElement("div");
+        wrap.className = "word-quiz-wrap";
+
+        const qWrap = document.createElement("div");
+        qWrap.className = "word-quiz-q";
+        const qCard = buildWordSingleCard(question, wordIndex, { enableFlip: false });
+        qWrap.appendChild(qCard);
+
+        const optionsWrap = document.createElement("div");
+        optionsWrap.className = "word-quiz-options";
+
+        const wrongPool = wordCards.filter((w) => w.id !== question.id);
+        const wrongWord = wrongPool.length ? wrongPool[Math.floor(Math.random() * wrongPool.length)] : question;
+        const optionWords = shuffle([question, wrongWord]);
+
+        optionWords.forEach((opt) => {
+          const optCard = buildWordSingleCard(opt, 0, { enableFlip: false });
+          optCard.classList.add("is-flipped"); // show back side (meaning + example)
+
+          const btn = optCard.querySelector("button");
+          const clickable = btn || optCard;
+          clickable.addEventListener("click", () => {
+            if (activeWordMode !== "quiz") return;
+            if (quizAnswered) return;
+            quizAnswered = true;
+            if (quizCorrectCount == null) quizCorrectCount = 0;
+            const isCorrect = opt.id === question.id;
+            if (isCorrect) quizCorrectCount += 1;
+
+            // Clear previous highlight (in case of re-render without reset).
+            optionsWrap.querySelectorAll(".card.quiz-correct, .card.quiz-wrong").forEach((c) => {
+              c.classList.remove("quiz-correct");
+              c.classList.remove("quiz-wrong");
+            });
+
+            optCard.classList.add(isCorrect ? "quiz-correct" : "quiz-wrong");
+
+              // Instant feedback text (so the user always knows result).
+              if (wordNavLabel) {
+                wordNavLabel.textContent = isCorrect ? "答對！" : "答錯！";
+                setTimeout(() => {
+                  if (activeWordMode === "quiz") updateWordNavLabel();
+                }, 650);
+              }
+
+            updateWordNavButtons();
+            if (wordIndex >= (wordCards.length ?? 1) - 1) {
+              finishWordQuiz();
+            }
+          });
+
+          optionsWrap.appendChild(optCard);
+        });
+
+        wrap.appendChild(qWrap);
+        wrap.appendChild(optionsWrap);
+
+        if (wordCardHost) wordCardHost.appendChild(wrap);
+        else deckEl.appendChild(wrap);
+
+        updateWordNavLabel();
+        updateWordNavButtons();
+        updateWordDots();
+      }
+
+      function setActiveWordTab() {
+        const set = (btn, on) => {
+          if (!btn) return;
+          btn.classList.toggle("active", on);
+        };
+        set(tabGreeting, activeWordCategory === "greeting");
+        set(tabNumbers, activeWordCategory === "numbers");
+        set(tabDaily, activeWordCategory === "daily");
+      }
+
+      function updateWordDots() {
+        if (!wordDots) return;
+        wordDots.innerHTML = "";
+        const total = wordCards?.length || 0;
+        for (let i = 0; i < total; i++) {
+          const d = document.createElement("div");
+          d.className = "word-dot" + (i === wordIndex ? " active" : "");
+          wordDots.appendChild(d);
+        }
+      }
+
+      function updateWordModeUi() {
+        if (btnWordModeReading) btnWordModeReading.classList.toggle("active", activeWordMode === "reading");
+        if (btnWordModeLearning) btnWordModeLearning.classList.toggle("active", activeWordMode === "learning");
+        if (btnWordModeQuiz) btnWordModeQuiz.classList.toggle("active", activeWordMode === "quiz");
+        if (wordSpeedControls) {
+          const show = activeWordMode !== "quiz";
+          wordSpeedControls.classList.toggle("show", show);
+          wordSpeedControls.setAttribute("aria-hidden", show ? "false" : "true");
+        }
+        if (wordLearningControls) {
+          const show = activeWordMode === "learning";
+          wordLearningControls.classList.toggle("show", show);
+          wordLearningControls.setAttribute("aria-hidden", show ? "false" : "true");
+        }
+        if (btnWordResetLearning) {
+          const show = activeWordMode === "learning";
+          btnWordResetLearning.style.display = show ? "" : "none";
+        }
+        if (wordLearningResetWrap) {
+          const show = activeWordMode === "learning";
+          wordLearningResetWrap.classList.toggle("show", show);
+          wordLearningResetWrap.setAttribute("aria-hidden", show ? "false" : "true");
+        }
+        if (btnWordPrev) btnWordPrev.disabled = activeWordMode === "learning";
+        if (btnWordNext) btnWordNext.disabled = activeWordMode === "learning";
+        if (btnWordSpeak) btnWordSpeak.disabled = activeWordMode === "quiz";
+      }
+
+      function enterWordMode() {
+        currentGameType = "wordCards";
+        gameEnded = true;
+        lock = true;
+
+        if (centerStartOverlay) centerStartOverlay.classList.add("hidden");
+        if (btnStart) btnStart.disabled = true;
+
+        if (btnReference) btnReference.style.display = "none";
+        if (footerHintEl) footerHintEl.style.display = "none";
+        if (headerTitleEl) headerTitleEl.textContent = "日文單字卡";
+
+        // Show word viewer UI.
+        deckEl.classList.add("word-mode");
+        if (wordUi) {
+          wordUi.classList.add("show");
+          wordUi.setAttribute("aria-hidden", "false");
+        }
+
+        // Hide kana-match timer UI visibility.
+        const sb = document.querySelector(".scorebar");
+        if (sb) sb.style.display = "none";
+
+        stopTimer();
+
+        wordCards = shuffle(getWordsByCategory(activeWordCategory).map((w, idx) => ({ ...w, id: `w${idx}` })));
+        wordIndex = 0;
+
+        if (activeWordMode === "learning") {
+          wordKnown = wordCards.map(() => false);
+          wordRemaining = wordCards.length;
+          if (wordLearningControls) {
+            wordLearningControls.classList.add("show");
+            wordLearningControls.setAttribute("aria-hidden", "false");
+          }
+          if (btnWordPrev) btnWordPrev.disabled = true;
+          if (btnWordNext) btnWordNext.disabled = true;
+        } else if (activeWordMode === "quiz") {
+          wordKnown = [];
+          wordRemaining = wordCards.length;
+          quizAnswered = false;
+          quizCorrectCount = 0;
+          if (wordLearningControls) {
+            wordLearningControls.classList.remove("show");
+            wordLearningControls.setAttribute("aria-hidden", "true");
+          }
+        } else {
+          // reading mode
+          if (wordLearningControls) {
+            wordLearningControls.classList.remove("show");
+            wordLearningControls.setAttribute("aria-hidden", "true");
+          }
+          wordKnown = [];
+          wordRemaining = wordCards.length;
+          if (btnWordPrev) btnWordPrev.disabled = false;
+          if (btnWordNext) btnWordNext.disabled = false;
+        }
+        setActiveWordTab();
+        updateWordModeUi();
+        renderWordCurrent();
+      }
+
+      function leaveWordModeToKana() {
+        currentGameType = "kanaMatch";
+        deckEl.classList.remove("word-mode");
+        if (wordUi) {
+          wordUi.classList.remove("show");
+          wordUi.setAttribute("aria-hidden", "true");
+        }
+        if (wordSpeedControls) {
+          wordSpeedControls.classList.remove("show");
+          wordSpeedControls.setAttribute("aria-hidden", "true");
+        }
+        if (btnReference) btnReference.style.display = "";
+
+        if (footerHintEl) footerHintEl.style.display = "";
+
+        const sb = document.querySelector(".scorebar");
+        if (sb) sb.style.display = "";
+
+        if (headerTitleEl) headerTitleEl.textContent = "日文對對碰";
+
+        // Put speed controls back to its original place in DOM.
+        if (wordSpeedControls && wordControlsHome && wordSpeedControls.parentElement !== wordControlsHome) {
+          wordControlsHome.appendChild(wordSpeedControls);
+        }
+      }
+
+      function onCardClick(cardId) {
+        if (lock) return;
+        if (gameEnded) return;
+
+        const card = cards.find((c) => c.id === cardId);
+        if (!card) return;
+        if (matchedPairIds.has(card.pairId)) return;
+
+        const cell = deckEl.querySelector(`[data-card-id="${CSS.escape(cardId)}"]`);
+        if (!cell) return;
+        const isAlreadyFlipped = cell.classList.contains("is-flipped");
+        if (isAlreadyFlipped) return;
+
+        cell.classList.add("is-flipped");
+        flippedIds.push(cardId);
+
+        if (flippedIds.length === 2) {
+          moves += 1;
+          movesValueEl.textContent = String(moves);
+          checkMatch();
+        }
+      }
+
+      function checkMatch() {
+        lock = true;
+        const [id1, id2] = flippedIds;
+        const c1 = cards.find((c) => c.id === id1);
+        const c2 = cards.find((c) => c.id === id2);
+
+        // Same pairId means kana and romaji match for that target.
+        const isMatch = c1.pairId === c2.pairId && c1.kind !== c2.kind;
+
+        if (isMatch) {
+          matchedPairIds.add(c1.pairId);
+          // Mark both cards as matched.
+          [id1, id2].forEach((id) => {
+            const cell = deckEl.querySelector(`[data-card-id="${CSS.escape(id)}"]`);
+            cell.classList.add("is-matched");
+          });
+
+          const kanaValue = c1.kind === "kana" ? c1.value : c2.value;
+          triggerBonkCelebration([id1, id2], kanaValue, c1.pairColor);
+
+          flippedIds = [];
+          lock = false;
+          setProgress();
+
+          if (matchedPairIds.size === activePairs.length) {
+            stopTimer();
+            showWin();
+          }
+        } else {
+          // Flip back after a short delay.
+          pendingFlipBackTimeout = setTimeout(() => {
+            [id1, id2].forEach((id) => {
+              const cell = deckEl.querySelector(`[data-card-id="${CSS.escape(id)}"]`);
+              cell.classList.remove("is-flipped");
+            });
+            flippedIds = [];
+            lock = false;
+            pendingFlipBackTimeout = null;
+          }, 750);
+        }
+      }
+
+      function showWin() {
+        const elapsedSeconds = startTimeMs ? (Date.now() - startTimeMs) / 1000 : 0;
+        gameEnded = true;
+        lock = true;
+        if (centerStartOverlay) centerStartOverlay.classList.add("hidden");
+        winSummaryEl.textContent = `你用 ${moves} 次完成 ${activePairs.length} 對配對，用時 ${formatTime(
+          elapsedSeconds
+        )}，成功通關！剩餘 ${lives} 命。`;
+        if (typeof winDialog.showModal === "function") {
+          winDialog.showModal();
+        }
+      }
+
+      const bonkToastEl = document.getElementById("bonkToast");
+
+      function speakKana(kana) {
+        if (!("speechSynthesis" in window)) return;
+        try {
+          speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(kana);
+          utter.lang = "ja-JP";
+          utter.rate = 0.95;
+          utter.pitch = 1.0;
+          speechSynthesis.speak(utter);
+        } catch {
+          // Ignore if the browser doesn't have voice support.
+        }
+      }
+
+      function triggerBonkCelebration(cardIds, kanaValue, pairColor) {
+        // Animate the two matched cards.
+        cardIds.forEach((id) => {
+          const cell = deckEl.querySelector(`[data-card-id="${CSS.escape(id)}"]`);
+          if (!cell) return;
+          cell.classList.remove("is-bonking");
+          // Force reflow so animation can replay.
+          // eslint-disable-next-line no-unused-expressions
+          cell.offsetHeight;
+          cell.classList.add("is-bonking");
+          setTimeout(() => cell.classList.remove("is-bonking"), 580);
+        });
+
+        // Toast.
+        if (bonkToastEl) {
+          bonkToastEl.innerHTML = `碰一下：<span class="accent">${kanaValue}</span>`;
+          bonkToastEl.style.setProperty("--toastAccent", pairColor);
+          bonkToastEl.classList.remove("show");
+          // eslint-disable-next-line no-unused-expressions
+          bonkToastEl.offsetHeight;
+          bonkToastEl.classList.add("show");
+          setTimeout(() => bonkToastEl.classList.remove("show"), 760);
+        }
+
+        // Voice.
+        speakKana(kanaValue);
+      }
+
+      function buildReferenceTable() {
+        referenceTbody.innerHTML = "";
+        activePairs.forEach((p) => {
+          const tr = document.createElement("tr");
+
+          const tdKana = document.createElement("td");
+          tdKana.textContent = `${p.kana}`;
+
+          const tdRomaji = document.createElement("td");
+          tdRomaji.textContent = `${p.romaji}`;
+
+          tr.appendChild(tdKana);
+          tr.appendChild(tdRomaji);
+          referenceTbody.appendChild(tr);
+        });
+      }
+
+      // =========
+      // Events
+      // =========
+      const modeDialog = document.getElementById("modeDialog");
+      const gameSelectDialog = document.getElementById("gameSelectDialog");
+      const btnMode = document.getElementById("btnMode");
+      const btnCancelMode = document.getElementById("btnCancelMode");
+      const btnConfirmMode = document.getElementById("btnConfirmMode");
+      const btnCancelGameSelect = document.getElementById("btnCancelGameSelect");
+      const btnConfirmGameSelect = document.getElementById("btnConfirmGameSelect");
+      const referenceDesc = document.getElementById("referenceDesc");
+
+      function updateReferenceDesc() {
+        if (!referenceDesc) return;
+        if (activeMode === 1) {
+          referenceDesc.textContent = "這一關練習母音（ア・イ・ウ・エ・オ）與羅馬拼音配對。";
+        } else if (activeMode === 2) {
+          referenceDesc.textContent = "這一關練習母音 + か行（カ・キ・ク・ケ・コ）與羅馬拼音配對。";
+        } else {
+          referenceDesc.textContent = "這一關練習母音 + か行 + さ行（カ・キ・ク・ケ・コ / サ・シ・ス・セ・ソ）與羅馬拼音配對。";
+        }
+      }
+
+      function updateRulesBox(mode) {
+        if (!rulesBoxEl) return;
+        const seconds = getTimeLimitSeconds(mode);
+        const pairCount = getPairsForMode(mode).length;
+        const label =
+          mode === 1
+            ? "母音"
+            : mode === 2
+              ? "母音 + か行"
+              : "母音 + か行 + さ行";
+        rulesBoxEl.textContent = `規則：請在 ${seconds} 秒內完成配對（${pairCount} 對：${label}）；共有 3 次機會，每次超時會扣 1 命。`;
+      }
+
+      function openModeDialog() {
+        const checked = String(activeMode);
+        modeDialog.querySelectorAll('input[name="mode"]').forEach((r) => {
+          r.checked = r.value === checked;
+        });
+        updateRulesBox(activeMode);
+        if (typeof modeDialog.showModal === "function") modeDialog.showModal();
+        else modeDialog.open = true;
+      }
+
+      btnMode.addEventListener("click", () => {
+        if (referenceDialog.open) referenceDialog.close();
+        if (winDialog.open) winDialog.close();
+        if (loseDialog.open) loseDialog.close();
+        if (timeoutDialog?.open) timeoutDialog.close();
+        if (gameSelectDialog.open) gameSelectDialog.close();
+
+        initLanding();
+
+        if (typeof gameSelectDialog.showModal === "function") gameSelectDialog.showModal();
+        else gameSelectDialog.open = true;
+      });
+
+      btnCancelMode.addEventListener("click", () => {
+        modeDialog.close();
+      });
+
+      btnCancelGameSelect.addEventListener("click", () => {
+        gameSelectDialog.close();
+        initLanding();
+      });
+
+      if (wordSpeedInputs?.length) {
+        wordSpeedInputs.forEach((r) => {
+          r.addEventListener("change", () => {
+            const selected = document.querySelector('input[name="wordSpeed"]:checked')?.value ?? "normal";
+            wordSpeakRate = selected === "slow" ? 0.75 : selected === "fast" ? 1.25 : 1.0;
+          });
+        });
+      }
+
+      btnConfirmGameSelect.addEventListener("click", () => {
+        const selected = gameSelectDialog.querySelector('input[name="gameType"]:checked')?.value ?? "kanaMatch";
+        gameSelectDialog.close();
+
+        if (selected === "wordCards") {
+          activeWordCategory = "greeting";
+          activeWordMode = "reading";
+          enterWordMode();
+        } else {
+          leaveWordModeToKana();
+          initLanding();
+          openModeDialog();
+        }
+      });
+
+      modeDialog.addEventListener("change", (e) => {
+        if (!e.target) return;
+        if (e.target instanceof HTMLInputElement && e.target.name === "mode") {
+          const selected = Number(e.target.value);
+          activeMode = selected === 2 ? 2 : selected === 3 ? 3 : 1;
+          activePairs = getPairsForMode(activeMode);
+          timeLimitSeconds = getTimeLimitSeconds(activeMode);
+          remainingSeconds = timeLimitSeconds;
+          updateRulesBox(activeMode);
+        }
+      });
+
+      btnConfirmMode.addEventListener("click", () => {
+        const selected = Number(modeDialog.querySelector('input[name="mode"]:checked')?.value ?? "1");
+        activeMode = selected === 2 ? 2 : selected === 3 ? 3 : 1;
+
+        modeDialog.close();
+        if (referenceDialog.open) referenceDialog.close();
+        if (winDialog.open) winDialog.close();
+        if (loseDialog.open) loseDialog.close();
+        if (timeoutDialog?.open) timeoutDialog.close();
+        currentGameType = "kanaMatch";
+        leaveWordModeToKana();
+        initIdle();
+      });
+
+      btnReset.addEventListener("click", () => {
+        // Close modal/win dialog if open.
+        if (referenceDialog.open) referenceDialog.close();
+        if (winDialog.open) winDialog.close();
+        if (loseDialog.open) loseDialog.close();
+        if (timeoutDialog?.open) timeoutDialog.close();
+
+        if (currentGameType === "wordCards") {
+          enterWordMode();
+        } else {
+          currentGameType = "kanaMatch";
+          initIdle();
+        }
+      });
+
+      btnStart.addEventListener("click", () => {
+        // Start only after user presses Start.
+        if (currentGameType !== "kanaMatch") return;
+
+        if (referenceDialog.open) referenceDialog.close();
+        if (winDialog.open) winDialog.close();
+        if (loseDialog.open) loseDialog.close();
+        if (timeoutDialog?.open) timeoutDialog.close();
+
+        resetGame({ resetLives: true, autoStart: true });
+      });
+
+      btnReference.addEventListener("click", () => {
+        updateReferenceDesc();
+        buildReferenceTable();
+        if (typeof referenceDialog.showModal === "function") referenceDialog.showModal();
+        else referenceDialog.open = true;
+      });
+
+      btnCloseReference.addEventListener("click", () => {
+        referenceDialog.close();
+      });
+
+      btnPlayAgain.addEventListener("click", () => {
+        winDialog.close();
+        initIdle();
+      });
+
+      btnCloseWin.addEventListener("click", () => {
+        winDialog.close();
+        initIdle();
+      });
+
+      btnLosePlayAgain.addEventListener("click", () => {
+        loseDialog.close();
+        initIdle();
+      });
+
+      btnLoseClose.addEventListener("click", () => {
+        loseDialog.close();
+        initIdle();
+      });
+
+      btnTimeoutRetry.addEventListener("click", () => {
+        timeoutDialog.close();
+        resetGame({ resetLives: false, autoStart: true });
+      });
+
+      btnTimeoutClose.addEventListener("click", () => {
+        timeoutDialog.close();
+        initIdle();
+      });
+
+      btnWordKnown?.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        if (activeWordMode !== "learning") return;
+        if (wordKnown[wordIndex]) return;
+        wordKnown[wordIndex] = true;
+        wordRemaining = Math.max(0, wordRemaining - 1);
+        if (wordRemaining <= 0) {
+          finishWordLearning();
+          return;
+        }
+
+        const next = findNextUnknownAfter(wordIndex);
+        wordIndex = next === -1 ? findAnyUnknownIndex() : next;
+        renderWordSingle();
+
+        // 按下時短暫高亮顏色。
+        if (btnWordKnown) {
+          btnWordKnown.classList.add("is-active");
+          setTimeout(() => btnWordKnown.classList.remove("is-active"), 180);
+        }
+      });
+
+      btnWordAgain?.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        if (activeWordMode !== "learning") return;
+        // 已經標記「已會」就不需要再讀
+        if (wordKnown[wordIndex]) return;
+
+        const next = findNextUnknownAfter(wordIndex);
+        wordIndex = next === -1 ? wordIndex : next;
+        renderWordSingle();
+
+        if (btnWordAgain) {
+          btnWordAgain.classList.add("is-active");
+          setTimeout(() => btnWordAgain.classList.remove("is-active"), 180);
+        }
+      });
+
+      btnWordResetLearning?.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        if (activeWordMode !== "learning") return;
+        wordKnown = wordCards.map(() => false);
+        wordRemaining = wordCards.length;
+        wordIndex = 0;
+        renderWordSingle();
+        updateWordNavLabel();
+        updateWordDots();
+
+        if (btnWordResetLearning) {
+          btnWordResetLearning.classList.add("is-active");
+          setTimeout(() => btnWordResetLearning.classList.remove("is-active"), 180);
+        }
+      });
+
+      btnWordDoneNext?.addEventListener("click", () => {
+        wordDoneDialog.close();
+        initLanding();
+        if (typeof gameSelectDialog.showModal === "function") gameSelectDialog.showModal();
+        else gameSelectDialog.open = true;
+      });
+
+      btnWordDoneClose?.addEventListener("click", () => {
+        wordDoneDialog.close();
+        initLanding();
+      });
+
+      btnWordQuizDoneNext?.addEventListener("click", () => {
+        wordQuizDoneDialog.close();
+        initLanding();
+        if (typeof gameSelectDialog.showModal === "function") gameSelectDialog.showModal();
+        else gameSelectDialog.open = true;
+      });
+
+      btnWordQuizDoneClose?.addEventListener("click", () => {
+        wordQuizDoneDialog.close();
+        initLanding();
+      });
+
+      btnWordPrev.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        if (activeWordMode === "learning") return;
+        if (activeWordMode === "quiz" && !quizAnswered) return;
+        if (wordIndex <= 0) return;
+        wordIndex -= 1;
+        if (activeWordMode === "quiz") quizAnswered = false;
+        renderWordCurrent();
+      });
+
+      btnWordNext.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        if (activeWordMode === "learning") return;
+        if (activeWordMode === "quiz" && !quizAnswered) return;
+        const total = wordCards?.length ?? 1;
+        if (wordIndex >= total - 1) return;
+        wordIndex += 1;
+        if (activeWordMode === "quiz") quizAnswered = false;
+        renderWordCurrent();
+      });
+
+      btnWordSpeak?.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        speakCurrentWord();
+      });
+
+      function resetWordSession() {
+        wordCards = shuffle(getWordsByCategory(activeWordCategory).map((w, idx) => ({ ...w, id: `w${idx}` })));
+        wordIndex = 0;
+        quizAnswered = false;
+        quizCorrectCount = 0;
+        if (activeWordMode === "learning") {
+          wordKnown = wordCards.map(() => false);
+          wordRemaining = wordCards.length;
+        } else {
+          wordKnown = [];
+          wordRemaining = wordCards.length;
+        }
+        setActiveWordTab();
+        updateWordModeUi();
+        renderWordCurrent();
+      }
+
+      tabGreeting?.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        activeWordCategory = "greeting";
+        resetWordSession();
+      });
+      tabNumbers?.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        activeWordCategory = "numbers";
+        resetWordSession();
+      });
+      tabDaily?.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        activeWordCategory = "daily";
+        resetWordSession();
+      });
+
+      btnWordModeReading?.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        if (activeWordMode === "reading") return;
+        activeWordMode = "reading";
+        resetWordSession();
+      });
+
+      btnWordModeLearning?.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        if (activeWordMode === "learning") return;
+        activeWordMode = "learning";
+        resetWordSession();
+      });
+
+      btnWordModeQuiz?.addEventListener("click", () => {
+        if (currentGameType !== "wordCards") return;
+        if (activeWordMode === "quiz") return;
+        activeWordMode = "quiz";
+        resetWordSession();
+      });
+
+      // =========
+      // Boot
+      // =========
+      initLanding();
+      if (typeof gameSelectDialog.showModal === "function") gameSelectDialog.showModal();
+      else gameSelectDialog.open = true;
+    </script>
+  </body>
+</html>
+
